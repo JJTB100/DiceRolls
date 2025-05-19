@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.stats import chisquare
 
 import matplotlib.pyplot as plt
 while True:
@@ -42,8 +43,6 @@ with open(fileName, "r") as f:
     numLines = len(rolls)
 
 
-
-
 # Prepare the transition matrix
 transitions = np.zeros((sides, sides), dtype=int)
 
@@ -67,6 +66,18 @@ conditional_probabilities = np.divide(
     out=np.zeros_like(transitions, dtype=float), 
     where=transition_sums != 0
 )
+
+# Perform chi-squared test for uniformity
+observed_counts = np.array([rolls.count(i + 1) for i in range(sides)])
+expected_counts = np.full(sides, numLines / sides)
+chi2_stat, p_value = chisquare(observed_counts, expected_counts)
+
+print(f"Chi-squared statistic: {chi2_stat:.2f}")
+print(f"P-value: {p_value:.4f}")
+if p_value < 0.05:
+    print("The distribution of rolls is significantly different from uniform (p < 0.05).")
+else:
+    print("The distribution of rolls is not significantly different from uniform (p >= 0.05).")
 
 plt.figure(figsize=(8, 6))
 plt.imshow(conditional_probabilities, cmap='hot', interpolation='nearest', origin='lower', vmin=0, vmax=max(conditional_probabilities.flatten()))
@@ -111,6 +122,19 @@ plt.legend()
 plt.tight_layout()
 plt.show()
 
+# Plot the cumulative mean of dice rolls over time
+cumulative_mean = np.cumsum(rolls) / np.arange(1, len(rolls) + 1)
+
+plt.figure(figsize=(10, 4))
+plt.plot(range(1, len(rolls) + 1), cumulative_mean, label='Cumulative Mean')
+plt.axhline(average_roll, color='red', linestyle='dashed', label='Overall Mean')
+plt.xlabel('Roll Number')
+plt.ylabel('Cumulative Mean')
+plt.title('Cumulative Mean of Dice Rolls Over Time')
+plt.legend()
+plt.tight_layout()
+plt.show()
+"""
 # Print the amount of times each X is followed by each Y
 print("Count of transitions from X to Y (X -> Y):")
 for prev in range(sides):
@@ -122,3 +146,4 @@ for prev in range(sides):
             print(f"{prev + 1} -> {nxt + 1}: 0")
             
             
+"""
