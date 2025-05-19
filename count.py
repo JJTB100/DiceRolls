@@ -1,18 +1,27 @@
 import numpy as np
 
 import matplotlib.pyplot as plt
+while True:
+    try:
+        sides = int(input("Enter the number of sides on the die: ").strip())
+        if sides > 1:
+            break
+        else:
+            print("Please enter an integer greater than 1.")
+    except ValueError:
+        print("Invalid input. Please enter a valid integer.")
 
 fileName = ""
 if not fileName:
     fileName = input("Enter the filename to save/load dice rolls: ").strip()
 # Prompt the user to enter numbers and save them to the file until -1 is entered
 while True:
-    user_input = input("Enter a dice roll (1-20) to save, or -1 to finish: ").strip()
+    user_input = input("Enter a dice roll to save, or -1 to finish: ").strip()
     if user_input == "-1":
         break
     elif user_input.isdigit():
         roll = int(user_input)
-        if 1 <= roll <= 20:
+        if 1 <= roll <= sides:
             with open(fileName, "a") as f_append:
                 f_append.write(f"{roll}\n")
             avg_roll = np.mean([int(line.strip()) for line in open(fileName) if line.strip().isdigit()])
@@ -21,9 +30,9 @@ while True:
             color_start = "\033[96m"
             color_end = "\033[0m"
             print(f"Current average roll: {color_start}{avg_roll:.2f}{color_end} out of {color_start}{total_rolls}{color_end} rolls.")
-            print(f"Saved roll {roll} to {fileName}.")
+            print(f"Saved roll {roll} to {fileName}.")#
         else:
-            print("Invalid roll. Please enter a number between 1 and 20.")
+            print(f"Invalid roll. Please enter a number between 1 and {sides}.")
     elif user_input:
         print("Invalid input. Please enter a number between 1 and 20 or -1 to finish.")
 numLines = 0
@@ -36,7 +45,6 @@ with open(fileName, "r") as f:
 
 
 # Prepare the transition matrix
-sides = 20
 transitions = np.zeros((sides, sides), dtype=int)
 
 for i in range(len(rolls) - 1):
