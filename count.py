@@ -15,8 +15,24 @@ while True:
 fileName = ""
 if not fileName:
     fileName = input("Enter the filename to save/load dice rolls: ").strip()
+    
+# Read the dice rolls from the file
+with open(fileName, "r") as f:
+    rolls = [int(line.strip()) for line in f if line.strip().isdigit()]
+    numLines = len(rolls)
+# Prepare the transition matrix
+transitions = np.zeros((sides, sides), dtype=int)
+
+for i in range(len(rolls) - 1):
+    prev_roll = rolls[i] - 1  # zero-based index
+    next_roll = rolls[i + 1] - 1
+    transitions[next_roll, prev_roll] += 1
+
+number_of_correct_predictions = 0
+number_rolls_this_session = 0
 # Prompt the user to enter numbers and save them to the file until -1 is entered
 while True:
+    number_rolls_this_session += 1
     user_input = input("Enter a dice roll to save, or -1 to finish: ").strip()
     if user_input == "-1":
         break
@@ -27,11 +43,40 @@ while True:
                 f_append.write(f"{roll}\n")
             avg_roll = np.mean([int(line.strip()) for line in open(fileName) if line.strip().isdigit()])
             total_rolls = sum(1 for _ in open(fileName))
+            # Check if the previous prediction was correct and print in green if so
+            if total_rolls > 1:
+                # Read all rolls so far
+                all_rolls = [int(line.strip()) for line in open(fileName) if line.strip().isdigit()]
+                if len(all_rolls) >= 2:
+                    prev_roll = all_rolls[-2] - 1  # zero-based index
+                    # Get the row for possible next rolls given the previous roll
+                    prev_next_probs = transitions[:, prev_roll]
+                    if prev_next_probs.sum() > 0:
+                        predicted_prev = np.argmax(prev_next_probs) + 1  # convert back to 1-based
+                        if roll == predicted_prev:
+                            # ANSI escape code for green
+                            green_start = "\033[92m"
+                            green_end = "\033[0m"
+                            number_of_correct_predictions += 1
+                            percent_correct = (number_of_correct_predictions / (number_rolls_this_session)) * 100
+                            print(f"{green_start}Previous prediction was correct! ({percent_correct:.1f}% correct so far of {number_rolls_this_session}){green_end}")
             # ANSI escape codes for color (e.g., cyan)
             color_start = "\033[96m"
             color_end = "\033[0m"
             print(f"Current average roll: {color_start}{avg_roll:.2f}{color_end} out of {color_start}{total_rolls}{color_end} rolls.")
-            print(f"Saved roll {roll} to {fileName}.")#
+            print(f"Saved roll {roll} to {fileName}.")
+            # Predict the next roll based on the most likely transition from the current roll
+            if total_rolls > 1:
+                last_roll = roll - 1  # zero-based index
+                # Get the row for possible next rolls given the last roll
+                next_probs = transitions[:, last_roll]
+                if next_probs.sum() > 0:
+                    predicted_next = np.argmax(next_probs) + 1  # convert back to 1-based
+                    print(f"Prediction: The most likely next roll is {color_start}{predicted_next}{color_end} based on previous transitions.")
+                else:
+                    print("Not enough data to predict the next roll yet.")
+            else:
+                print("Not enough data to predict the next roll yet.")
         else:
             print(f"Invalid roll. Please enter a number between 1 and {sides}.")
     elif user_input:
@@ -41,8 +86,6 @@ numLines = 0
 with open(fileName, "r") as f:
     rolls = [int(line.strip()) for line in f if line.strip().isdigit()]
     numLines = len(rolls)
-
-
 # Prepare the transition matrix
 transitions = np.zeros((sides, sides), dtype=int)
 
@@ -134,6 +177,8 @@ plt.title('Cumulative Mean of Dice Rolls Over Time')
 plt.legend()
 plt.tight_layout()
 plt.show()
+
+
 """
 # Print the amount of times each X is followed by each Y
 print("Count of transitions from X to Y (X -> Y):")
